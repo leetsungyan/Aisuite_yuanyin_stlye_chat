@@ -43,14 +43,38 @@ def reply(prompt, provider="groq", model="llama-3.3-70b-versatile"):
     except Exception as e:
         return f"發生錯誤: {str(e)}"
 
+def get_api_key():
+    """Get API key from Streamlit secrets or environment variables"""
+    # Try Streamlit secrets first
+    try:
+        key = st.secrets.get("GROQ_API_KEY")
+        if key:
+            return key
+    except:
+        pass
+    
+    # Try environment variable
+    key = os.getenv("GROQ_API_KEY")
+    if key:
+        return key
+    
+    return None
+
 # API Key setup
 st.sidebar.header("API 設定")
-api_key = st.sidebar.text_input("Groq API Key", type="password")
+api_key = get_api_key()
+
 if api_key:
     os.environ['GROQ_API_KEY'] = api_key
-    st.sidebar.success("API Key 已設定")
+    st.sidebar.success("API Key 已從 Secrets 或環境變數載入")
 else:
-    st.sidebar.warning("請輸入你的 Groq API Key")
+    # Fallback: show input field
+    api_key = st.sidebar.text_input("Groq API Key", type="password")
+    if api_key:
+        os.environ['GROQ_API_KEY'] = api_key
+        st.sidebar.success("API Key 已設定")
+    else:
+        st.sidebar.warning("請輸入你的 Groq API Key")
 
 # Provider selection
 provider = st.sidebar.selectbox(
@@ -75,8 +99,9 @@ user_input = st.text_area(
 )
 
 if st.button("Lucky Vicky 魔法! ✨", type="primary"):
-    if not api_key:
-        st.error("請先在側邊欄輸入 API Key")
+    current_key = os.getenv('GROQ_API_KEY')
+    if not current_key:
+        st.error("請先設定 API Key")
     elif not user_input.strip():
         st.warning("請輸入一些內容")
     else:
